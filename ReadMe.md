@@ -34,7 +34,7 @@ app.listen(3000,()=>{
 ## 1.安装nodemon
 更改内容之后，自动重启服务
 ```
-npm i nodemon
+npm i nodemon -D
 ```
 ## 2.编写package.json
 ```
@@ -67,7 +67,7 @@ module.exports = process.env
 ```
 3.main.js引入环境变量
 ```
-
+const { APP_PORT } = require('./config/config.default.js')
 ```
 # 五 添加路由
 路由：根据不同的url，调用对应的处理函数
@@ -134,4 +134,45 @@ class UserController {
   }
 }
 module.exports = new UserController()
+```
+# 7 解析body
+## 1.安装koa-body
+```
+npm install koa-body
+```
+## 2.注册中间件
+改写`app/index.js`
+```
+// 引入koa-body
+const KoaBody = require('koa-body')
+// 注册中间件
+app.use(KoaBody())
+```
+## 3.解析请求数据
+```
+const { createUser } = require('../service/user.service.js')
+class UserController {
+  async register(ctx,next){
+    //  1.获取数据
+    console.log(ctx.request.body);
+    // 2.操作数据库
+    const { user_name,password} = ctx.request.body
+    const res = await createUser(user_name,password)
+    // 3.返回结果
+    ctx.body = res
+  }
+  async login(ctx,next){
+    ctx.body = "登录成功"
+  }
+}
+module.exports = new UserController()
+```
+## 4.拆分service层
+```
+class UserService{
+  async createUser(user_name,password){
+    return "写入数据成功"
+  }
+}
+module.exports = new UserService()
 ```
