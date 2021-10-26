@@ -75,3 +75,63 @@ module.exports = process.env
 ```
 npm install koa-router
 ```
+步骤：
+1. 导入包
+2. 实例化对象
+3. 编写路由
+4. 注册中间件
+## 2.编写路由
+创建`src/router`目录，编写user.route.js
+```
+const Router = require('koa-router')
+const router = new Router({prefix:'/users'})
+router.get('/',(ctx,next)=>{
+  ctx.body = 'hello users'
+})
+module.exports = router
+```
+## 3.改写main.js
+导入`const userRouter = require('./router/user.route')`  
+注册中间件`app.use(userRouter.routes())`
+
+# 六 目录优化
+##  1.将http服务和app业务拆分
+新建`app/index.js`文件
+```
+const Koa = require('koa')
+const app = new Koa()
+const userRouter = require('../router/user.route')
+app.use(userRouter.routes())
+module.exports = app
+```
+改写main.js
+```
+const app = require('./app')
+```
+## 2.将路由和控制器拆分
+路由：解析URL，分发给控制器对应的方法    
+控制器：处理不同的业务  
+改写user.route.js
+```
+const Router = require('koa-router')
+const router = new Router({prefix:'/users'})
+const { register,login } = require('../controller/user.controller')
+router.get('/',(ctx,next)=>{
+  ctx.body = 'hello users'
+})
+router.post('/register',register)
+router.post('/login',login)
+module.exports = router
+```
+新建`controller/user.controller.js`
+```
+class UserController {
+  async register(ctx,next){
+    ctx.body = "用户注册成功"
+  }
+  async login(ctx,next){
+    ctx.body = "登录成功"
+  }
+}
+module.exports = new UserController()
+```
