@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const { getUserInfo } = require('../service/user.service.js')
-const { userFormateError,userAlreadyExited } = require('../constant/err.type')
+const { userFormateError,userAlreadyExited,userNotExited,userPasswordError,userLoginError } = require('../constant/err.type')
 // 校验参数是否为空
 const userValidator = async (ctx,next)=>{
   // 合法性
@@ -31,8 +31,33 @@ const bcryptPassword = async (ctx,next)=>{
   ctx.request.body.password = hash
   await next()
 }
+// 登录验证
+const verifyLogin = async (ctx,next)=>{
+  const { user_name,password } = ctx.request.body
+  try {
+    // 1.用户必须存在，否则登录不成功
+    const res = await getUserInfo({user_name})
+    if(!res){
+      console.log(123);
+      ctx.app.emit('error',userNotExited,ctx)
+      return
+    }
+    // 2.密码正确
+    const hash = res.password
+    if(!bcrypt.compareSync(password, hash)){
+      ctx.app.emit('error',userPasswordError,ctx)
+      return
+    }
+    next()
+  }catch (e) {
+    console.error(e)
+    ctx.app.emit('error',userLoginError,ctx)
+  }
+
+}
 module.exports = {
   userValidator,
   verifyUser,
-  bcryptPassword
+  bcryptPassword,
+  verifyLogin
 }

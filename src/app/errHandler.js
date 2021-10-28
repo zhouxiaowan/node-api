@@ -11,6 +11,6 @@ module.exports = (error,ctx)=>{
       status = 500
       break;
   }
-  ctx.body = error,
+  ctx.body = error
   ctx.status = status
 }

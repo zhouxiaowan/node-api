@@ -219,7 +219,7 @@ MYSQL_PWD = 123456
 MYSQL_DB = zdsc
 ```
 # 9 创建User模型
-# 1.拆分model层
+## 1.拆分model层
 sequelize主要通过Model对应数据表
 创建`src/model/user.model.js` 
 ```
