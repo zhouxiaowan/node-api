@@ -251,7 +251,7 @@ const User = seq.define('zd_user', {
 
 module.exports = User
 ```
-# 10 添加数据入库
+# 10 添加数据入库和错误处理
 所有的数据库操作都在Service层完成，Service层调用Model层完成数据库操作  
 改写`user.service.js`
 ```
@@ -323,4 +323,121 @@ class UserController {
 }
 module.exports = new UserController()
 ```
-# 11 
+# 11 拆分中间件
+在路由模块->处理中间件1->处理中间件2->....->处理中间件n  
+例如：`userValidator`,`verifyUser`,`bcryptPassword`等都为中间件
+```
+router.post('/register',userValidator,verifyUser,bcryptPassword,register)
+```
+## 1.拆分中间件
+添加`src/middleware/user.middleware.js`
+```
+const bcrypt = require('bcryptjs')
+const { getUserInfo } = require('../service/user.service.js')
+const { userFormateError,userAlreadyExited } = require('../constant/err.type')
+// 校验参数是否为空
+const userValidator = async (ctx,next)=>{
+  // 合法性
+  const { user_name,password } = ctx.request.body
+  if(!user_name || !password){
+    ctx.status = 401
+    ctx.app.emit('error',userFormateError,ctx)
+    return
+  }
+  await next()
+}
+// 校验用户是否已注册
+const verifyUser = async (ctx,next)=>{
+  // 合理性
+  const { user_name } = ctx.request.body
+  if(await getUserInfo({user_name})){
+    ctx.app.emit('error',userAlreadyExited,ctx)
+    return
+  }
+  await next()
+}
+// 密码加密
+const bcryptPassword = async (ctx,next)=>{
+  const { password } = ctx.request.body
+  const salt = bcrypt.genSaltSync(10);
+  // hash 为生成的密文
+  const hash = bcrypt.hashSync(password, salt)
+  ctx.request.body.password = hash
+  await next()
+}
+module.exports = {
+  userValidator,
+  verifyUser,
+  bcryptPassword
+}
+```
+## 2.错误处理
+* 在出错的地方使用`ctx.app.emit`来提交错误
+```
+ctx.app.emit('error',userAlreadyExited,ctx)
+```
+编写统一的错误处理文件
+```
+module.exports = {
+  userFormateError:{
+    code:1001,
+    message:"用户名或密码不能为空",
+    result:null
+  },
+  userAlreadyExited:{
+    code:1002,
+    message:"用户已存在",
+    result:null
+  },
+  regiesterError:{
+    code:1002,
+    message:"用户注册错误",
+    result:null
+  }
+}
+```
+* 在app.js中通过`app.on`来监听
+```
+app.on('error',errorHandler)
+```
+封装`errorHandler`错误处理函数为:
+```
+module.exports = (error,ctx)=>{
+  let status = 500
+  switch (error.code) {
+    case '1001':
+      status = 400
+      break;
+    case '1002':
+      status = 409
+      break;
+    default:
+      status = 500
+      break;
+  }
+  ctx.body = error,
+  ctx.status = status
+}
+```
+
+# 12 密码加密
+## 1.安装bcryptjs
+```
+npm install bcryptjs 
+```
+## 2.使用bcryptjs加密(编写加密中间件)
+```
+const bcryptPassword = async (ctx,next)=>{
+  // password为用户密码
+  const { password } = ctx.request.body
+  const salt = bcrypt.genSaltSync(10);
+  // hash 为生成的密文
+  const hash = bcrypt.hashSync(password, salt)
+  ctx.request.body.password = hash
+  await next()
+}
+```
+## 3.注册为router的中间件
+```
+router.post('/register',bcryptPassword,register)
+```
