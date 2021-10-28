@@ -168,6 +168,7 @@ class UserController {
 module.exports = new UserController()
 ```
 ## 4.拆分service层
+新建`service/user.service.js`
 ```
 class UserService{
   async createUser(user_name,password){
@@ -176,3 +177,150 @@ class UserService{
 }
 module.exports = new UserService()
 ```
+# 8 数据库操作
+sequelize ORM数据库操作
+ORM： 对象关系映射
+1. 数据表对应（映射）一个类
+2. 数据表中的数据行对应一个对象
+3. 数据表字段对应对象的属性
+4. 数据表的操作对应对象的方法
+## 1.安装对应的插件
+```
+npm install mysql2 sequelize
+```
+## 2.连接数据库
+`src/db/seq.js`
+```
+const { Sequelize } = require('sequelize');
+const { MYSQL_HOST,MYSQL_USER,MYSQL_PWD,MYSQL_DB } = require('../config/config.default')
+
+const seq = new Sequelize(MYSQL_DB, MYSQL_USER, MYSQL_PWD, {
+  host: MYSQL_HOST,
+  dialect: 'mysql'
+});
+
+/**
+ *  测试是否连接成功
+ **/
+seq
+  .authenticate().then(()=>{
+  console.log("数据库连接成功");
+}).catch(()=>{
+  console.log("数据库连接失败");
+})
+```
+执行js脚本时，需要在根目录下执行即`node .\src\db\seq.js`;且不能`cd`到`db`目录下执行`node seq.js`，因为<font color='red'> .env文件变量只能在根目录下找到 </font>
+## 3.编写配置文件
+```
+APP_PORT=3500
+MYSQL_HOST = localhost
+MYSQL_USER = root
+MYSQL_PWD = 123456
+MYSQL_DB = zdsc
+```
+# 9 创建User模型
+# 1.拆分model层
+sequelize主要通过Model对应数据表
+创建`src/model/user.model.js` 
+```
+const { DataTypes } = require('sequelize')
+const seq = require('../db/seq')
+const User = seq.define('zd_user', {
+  // id 会自动创建
+  // 在这里定义模型属性
+  user_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique:true,
+    comment:'用户名，唯一'
+  },
+  password: {
+    type: DataTypes.CHAR(64),
+    allowNull: false,
+  },
+  is_admin: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue:0,
+    comment:'是否管理员，0否，1是'
+  }
+});
+
+// 强制同步数据库
+// User.sync({ force: true });
+
+module.exports = User
+```
+# 10 添加数据入库
+所有的数据库操作都在Service层完成，Service层调用Model层完成数据库操作  
+改写`user.service.js`
+```
+const User = require('../model/user.model')
+class UserService{
+  async createUser(user_name,password){
+    const res = await User.create({user_name:user_name,password:password})
+    return res.dataValues
+  }
+  async getUserInfo({id,user_name,password,is_admin}){
+    const whereOpt = {}
+    id && Object.assign(whereOpt,{id})
+    user_name && Object.assign(whereOpt,{user_name})
+    password && Object.assign(whereOpt,{password})
+    is_admin && Object.assign(whereOpt,{is_admin})
+    const res = await User.findOne({
+      attributes:['id','user_name','password','is_admin'],
+      where:whereOpt
+    })
+    return res
+  }
+}
+module.exports = new UserService()
+```
+改写`user.controller.js`
+```
+const { createUser,getUserInfo } = require('../service/user.service.js')
+class UserController {
+  async register(ctx,next){
+    //  1.获取数据
+    console.log(ctx.request.body);
+    // 2.操作数据库
+    const { user_name,password} = ctx.request.body
+    // 错误处理
+    // 错误处理-合法性
+    if(!user_name || !password){
+      ctx.status = 401
+      ctx.body = {
+        code:1001,
+        message:"用户名或密码不能为空",
+        result:{}
+      }
+      return
+    }
+    // 错误处理-合理性
+    if(getUserInfo({user_name})){
+      ctx.status = 409
+      ctx.body = {
+        code:1002,
+        message:"用户已存在",
+        result:{}
+      }
+      return
+    }
+    const res = await createUser(user_name,password)
+    // 3.返回结果
+    ctx.body = {
+      code:0,
+      message:"用户注册成功",
+      result:{
+        id:res.id,
+        name:res.user_name
+      }
+    }
+  }
+  async login(ctx,next){
+    ctx.body = "登录成功"
+  }
+}
+module.exports = new UserController()
+```
+# 11 
