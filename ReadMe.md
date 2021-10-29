@@ -460,4 +460,42 @@ ctx.body = {
   }
 }
 ```
-# 14用户认证
+# 14 路由文件自动加载
+## 1.刚开始是这样使用路由的
+* 在`app/index.js`中注册路由中间件
+```
+const goodsRouter = require('../router/goods.route')
+app.use(goodsRouter.routes())
+```
+* 在`router/goods.route.js`写具体的路由地址
+```
+const Router = require('koa-router')
+const router = new Router({prefix:'/goods'})
+router.post('/upload',(ctx,next)=>{
+    ctx.body = "上传成功"
+})
+module.exports = router
+```
+# 2.路由自动加载
+* 新建`router/index.js`
+```
+const fs = require('fs')
+const Router = require('koa-router')
+const router = new Router()
+// 同步方式（readdirSync）读取当前文件夹下的文件
+fs.readdirSync(__dirname).forEach(file=>{
+    if(file !== 'index.js'){
+        let r = require('./'+file)
+        // router注册中间件
+        router.use(r.routes())
+    }
+})
+
+module.exports = router
+```
+* 改写`app/index.js`
+```
+const router = require('../router/index')
+// allowedMethods 为识别允许的请求方法
+app.use(router.routes()).use(router.allowedMethods())
+```
