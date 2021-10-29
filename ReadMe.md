@@ -441,3 +441,23 @@ const bcryptPassword = async (ctx,next)=>{
 ```
 router.post('/register',bcryptPassword,register)
 ```
+# 13颁发token
+## 1.安装`jsonwebtoken`
+```
+npm install jsonwebtoken
+```
+## 2.使用`jsonwebtoken`
+```
+// 引用jsonwebtoken
+const jwt = require('jsonwebtoken')
+// 生成token
+const {password,...res} = ctx.request.body
+ctx.body = {
+  code:0,
+  message:"用户登录成功",
+  result:{
+    token:jwt.sign(res,JWT_SECRET,{expiresIn: '1d'})
+  }
+}
+```
+# 14用户认证

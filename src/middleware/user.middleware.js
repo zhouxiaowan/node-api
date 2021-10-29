@@ -1,6 +1,10 @@
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const { JWT_SECRET } = require('../config/config.default')
 const { getUserInfo } = require('../service/user.service.js')
-const { userFormateError,userAlreadyExited,userNotExited,userPasswordError,userLoginError } = require('../constant/err.type')
+const { userFormateError,userAlreadyExited,userNotExited,userPasswordError,userLoginError,
+  tokenExpiredError,invalidToken
+} = require('../constant/err.type')
 // 校验参数是否为空
 const userValidator = async (ctx,next)=>{
   // 合法性
@@ -24,11 +28,14 @@ const verifyUser = async (ctx,next)=>{
 }
 // 密码加密
 const bcryptPassword = async (ctx,next)=>{
-  const { password } = ctx.request.body
-  const salt = bcrypt.genSaltSync(10);
-  // hash 为生成的密文
-  const hash = bcrypt.hashSync(password, salt)
-  ctx.request.body.password = hash
+  try {
+    const { password } = ctx.request.body
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt)
+    ctx.request.body.password = hash
+  }catch (e) {
+    console.log(e)
+  }
   await next()
 }
 // 登录验证
@@ -38,7 +45,6 @@ const verifyLogin = async (ctx,next)=>{
     // 1.用户必须存在，否则登录不成功
     const res = await getUserInfo({user_name})
     if(!res){
-      console.log(123);
       ctx.app.emit('error',userNotExited,ctx)
       return
     }
@@ -48,16 +54,35 @@ const verifyLogin = async (ctx,next)=>{
       ctx.app.emit('error',userPasswordError,ctx)
       return
     }
-    next()
   }catch (e) {
     console.error(e)
     ctx.app.emit('error',userLoginError,ctx)
   }
-
+  // 一定要加await
+  await next()
+}
+const auth = async (ctx,next)=>{
+  const { authorization } = ctx.request.header
+  const token = authorization.replace('Bearer ','')
+  try{
+    const user = jwt.verify(token,JWT_SECRET)
+    ctx.state.user = user
+  }catch (e) {
+    switch (e.name) {
+      case 'TokenExpiredError':
+        console.error('token已过期', e)
+        return ctx.app.emit('error', tokenExpiredError, ctx)
+      case 'JsonWebTokenError':
+        console.error('无效的token', e)
+        return ctx.app.emit('error', invalidToken, ctx)
+    }
+  }
+  await next()
 }
 module.exports = {
   userValidator,
   verifyUser,
   bcryptPassword,
-  verifyLogin
+  verifyLogin,
+  auth
 }
