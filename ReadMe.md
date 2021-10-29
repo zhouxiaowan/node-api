@@ -476,7 +476,7 @@ router.post('/upload',(ctx,next)=>{
 })
 module.exports = router
 ```
-# 2.路由自动加载
+## 2.路由自动加载
 * 新建`router/index.js`
 ```
 const fs = require('fs')
@@ -499,3 +499,28 @@ const router = require('../router/index')
 // allowedMethods 为识别允许的请求方法
 app.use(router.routes()).use(router.allowedMethods())
 ```
+# 15 文件上传
+`koa-body`是支持文件上传的
+配置项为
+```
+const path = require('path')
+const KoaBody = require('koa-body')
+app.use(KoaBody({
+    multipart:true,
+    formidable:{
+        uploadDir:path.join(__dirname,'../upload'),
+        keepExtensions:true
+    }
+}))
+```
+怎么样让图片在浏览器中显示,安装`koa-static`
+```
+npm install koa-static
+```
+改写`app/index.js`
+```
+const KoaStatic = require('koa-static')
+app.use(KoaStatic(path.join(__dirname, '../upload')))
+```
+就可以直接在浏览器中输入域名端口号+图片名称进行访问  
+<font color="red">在koa-router中间件和koa-body都存在的情况下，务必让koa-body在koa-router之前。否则会报错</font>.  

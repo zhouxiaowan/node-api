@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize')
 const seq = require('../db/seq')
-const User = seq.define('zd_user', {
+const User = seq.define('zxw_user', {
   // id 会自动创建
   // 在这里定义模型属性
   user_name: {

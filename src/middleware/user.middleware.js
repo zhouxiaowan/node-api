@@ -3,11 +3,13 @@ const jwt = require('jsonwebtoken')
 const { JWT_SECRET } = require('../config/config.default')
 const { getUserInfo } = require('../service/user.service.js')
 const { userFormateError,userAlreadyExited,userNotExited,userPasswordError,userLoginError,
-  tokenExpiredError,invalidToken
+  tokenExpiredError,invalidToken,hadNotAdminPermission
 } = require('../constant/err.type')
 // 校验参数是否为空
 const userValidator = async (ctx,next)=>{
+  console.log(ctx.request.body)
   // 合法性
+  console.log("345",ctx.request.body)
   const { user_name,password } = ctx.request.body
   if(!user_name || !password){
     ctx.status = 401
@@ -61,6 +63,7 @@ const verifyLogin = async (ctx,next)=>{
   // 一定要加await
   await next()
 }
+// 用户认证，判断是否登录
 const auth = async (ctx,next)=>{
   const { authorization } = ctx.request.header
   const token = authorization.replace('Bearer ','')
@@ -79,10 +82,18 @@ const auth = async (ctx,next)=>{
   }
   await next()
 }
+// 判断是否有管理员权限
+const hadAdminPermission = async (ctx,next)=>{
+  if(!ctx.state.user.is_admin){
+    return ctx.app.emit('error',hadNotAdminPermission,ctx)
+  }
+  await next()
+}
 module.exports = {
   userValidator,
   verifyUser,
   bcryptPassword,
   verifyLogin,
-  auth
+  auth,
+  hadAdminPermission
 }

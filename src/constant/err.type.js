@@ -1,4 +1,9 @@
 module.exports = {
+  serviceError:{
+    code:1000,
+    message:"服务器错误",
+    result:null
+  },
   userFormateError:{
     code:1001,
     message:"用户名或密码不能为空",
@@ -37,6 +42,21 @@ module.exports = {
   invalidToken:{
     code:1011,
     message:"无效的token",
+    result:null
+  },
+  hadNotAdminPermission:{
+    code:1012,
+    message:"没有管理员权限",
+    result:null
+  },
+  imgUploadError:{
+    code:1001,
+    message:"图片上传失败",
+    result:null
+  },
+  goodsFormatError:{
+    code:1001,
+    message:"参数校验错误",
     result:null
   }
 }
