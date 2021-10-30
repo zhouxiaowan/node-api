@@ -7,7 +7,7 @@ const Goods = seq.define('zxw_goods',{
         comment:'商品名称'
     },
     goods_price:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.DECIMAL(10,2),
         allowNull: false,
         comment: '商品价格'
     },

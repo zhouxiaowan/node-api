@@ -1,6 +1,6 @@
 const path = require('path')
-const { imgUploadError,serviceError } = require('../constant/err.type')
-const { createGoods } = require('../service/goods.service')
+const { imgUploadError,serviceError,GoodsNotExited } = require('../constant/err.type')
+const { createGoods,updateGoods,removeGoods,restoreGoods,selectGoods } = require('../service/goods.service')
 class GoodsController{
     async upload(ctx,next){
         const { file } = ctx.request.files
@@ -33,6 +33,42 @@ class GoodsController{
             return ctx.app.emit('error',serviceError,ctx)
         }
         await next()
+    }
+    async updated(ctx,next){
+        try{
+            const res = await updateGoods(ctx.request.body)
+            if(res){
+                return ctx.app.emit('success',{"id" : res.id},ctx)
+            }
+        }catch (e) {
+            return ctx.app.emit('error',serviceError,ctx)
+        }
+
+    }
+    async remove(ctx){
+        const res = await removeGoods(ctx.params.id)
+        if(res){
+            ctx.app.emit('success',res,ctx)
+        }else{
+            ctx.app.emit('error',GoodsNotExited,ctx)
+        }
+    }
+    async restore(ctx){
+        const res = await restoreGoods(ctx.params.id)
+        if(res){
+            ctx.app.emit('success',res,ctx)
+        }else{
+            ctx.app.emit('error',GoodsNotExited,ctx)
+        }
+    }
+    async findAndCountAll(ctx){
+        const { pageNum=1,pageSize=10 } = ctx.request.body
+        const res = await selectGoods(pageNum,pageSize,ctx.request.body)
+        if(res){
+            ctx.app.emit('success',res,ctx)
+        }else{
+            ctx.app.emit('error',GoodsNotExited,ctx)
+        }
     }
 }
 module.exports = new GoodsController()

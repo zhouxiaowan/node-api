@@ -58,5 +58,10 @@ module.exports = {
     code:1001,
     message:"参数校验错误",
     result:null
+  },
+  GoodsNotExited:{
+    code:1004,
+    message:"商品不存在",
+    result:null
   }
 }
