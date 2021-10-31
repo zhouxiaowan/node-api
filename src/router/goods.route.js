@@ -1,11 +1,19 @@
 const Router = require('koa-router')
+const koaBody = require('koa-body')
+const path = require('path')
 const router = new Router({prefix:'/goods'})
 const { auth,hadAdminPermission } = require('../middleware/user.middleware')
 const { verifyGoods } = require('../middleware/goods.middleware')
 const { upload,create,updated,remove,restore,findAndCountAll } = require('../controller/goods.controller')
 const { validator } = require('../middleware/goods.middleware')
 // 上传图片
-router.post('/upload',auth,hadAdminPermission,upload)
+router.post('/upload',auth,hadAdminPermission,koaBody({
+    multipart:true,
+    formidable:{
+        uploadDir:path.join(__dirname,'../upload'),
+        keepExtensions:true
+    }
+}),upload)
 
 // 发布商品
 router.post('/create',validator,auth,hadAdminPermission,create)
