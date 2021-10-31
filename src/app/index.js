@@ -18,7 +18,8 @@ app.use(KoaBody({
     formidable:{
         uploadDir:path.join(__dirname,'../upload'),
         keepExtensions:true
-    }
+    },
+    parsedMethods: ['POST', 'PUT', 'PATCH', 'DELETE']
 }))
 
 // 注册路由中间件

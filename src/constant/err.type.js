@@ -4,6 +4,11 @@ module.exports = {
     message:"服务器错误",
     result:null
   },
+  formatError:{
+    code:1001,
+    message:"参数校验错误",
+    result:null
+  },
   userFormateError:{
     code:1001,
     message:"用户名或密码不能为空",
